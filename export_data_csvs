@@ -1,0 +1,77 @@
+import pandas as pd
+import requests
+import json
+import numpy as np
+from pandas import json_normalize
+
+# Create a Data Frame of the NYC Open Data Set
+
+df = pd.read_json('https://data.cityofnewyork.us/resource/43nn-pn8j')
+
+# Create Arrays and lists for the search / reference values of the above data set
+
+restaurant_camis_codes = np.array(df['camis'].values)
+phone_numbers = np.array(df['phone'].values)
+
+# Format all phone numbers with +1
+
+formatted_phone_numbers = []
+for n in phone_numbers:
+    formatted_phone_numbers.append("+1" + str(n))
+
+# Create an empty list to store responses from Yelp
+
+rows_of_businesses = []
+
+# Connect to Yelp Developer Portal
+
+api_key = 'BvKkbpeekLackRz9xTwV2clc0B90zBCDrS02mWb1-lf1nry6UIi7oCXQtBVBeTD7o9dbNHO42vbwEX2xrbnQZNCF1VGIpTT0sMUORvT81TjZjQ1g9SIGuWIciQwmZHYx'
+
+
+# Write a function that connects to Yelp and returns business data by phone number from the NYC Open Data Set
+
+def get_yelp_business_data(phone):
+    url = "https://api.yelp.com/v3/businesses/search/phone?"
+    headers = {'Authorization': 'Bearer %s' % api_key}
+    params = {'phone': phone}
+    review_data = requests.get(url, params=params, headers=headers)
+    if review_data.status_code == 200:
+        dict1 = review_data.json()
+        df2 = json_normalize(dict1['businesses'])
+        return df2
+    else:
+        print("The connection was unsuccessful.")
+        # If the response is unsuccessful, do not return anything for that query
+
+
+# Create a loop that iterates over each restaurant camis code, retrieves the corresponding phone number, queries that
+# phone number through the Yelp API, and stores it in a list (1) OR Utilize a range to limit how many calls you make
+# per day. (2)
+
+# 1
+
+# for i in restaurant_camis_codes:
+#     position = np.where(restaurant_camis_codes == i)[0][0]
+#     sample_row = get_yelp_business_data(formatted_phone_numbers[position])
+#     rows_of_businesses.append(sample_row)
+
+# 2
+# Get the first 500 businesses, or however many you select in the range
+
+df_yelp_businesses = pd.DataFrame()
+list_of_ids_dfs = []
+
+for i in range(0, 500):
+    sample_df = get_yelp_business_data(formatted_phone_numbers[i])
+    if not sample_df.empty:
+        list_of_ids_dfs.append(sample_df)
+
+df_yelp_businesses = pd.concat(list_of_ids_dfs)
+print(df_yelp_businesses)
+
+
+# Get a CSV export of each data frame (you only need the inspection data once)
+
+df.to_csv(r'C:\Users\brand\OneDrive\Desktop\CIS 4400\TEST EXPORTS\nyc_open_data_inspections.csv', index=False)
+df_yelp_businesses.to_csv(r'C:\Users\brand\OneDrive\Desktop\CIS 4400\TEST EXPORTS\yelp_business_data_1.csv',
+                          index=False)
