@@ -41,6 +41,8 @@ def get_yelp_business_data(phone):
         return df2
     else:
         print("The connection was unsuccessful.")
+        empty_df = pd.DataFrame()
+        return empty_df
         # If the response is unsuccessful, do not return anything for that query
 
 
